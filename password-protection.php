@@ -1,12 +1,57 @@
+
 <?php 
 /*
  * Plugin Name: Password blog protection
- * Description: Add pasword protection for blog page or post
+ * Description: Add password protection for blog page or post
  * Version: 1.1
  * Author: Zamaraiev Dmytro
  * WC requires at least: 5.7
  * Requires at least: 5.5
  */
+
+/* Main actions */
+add_action('init', 'myStartSession', 1);
+add_action('wp_logout', 'myEndSession');
+add_action('wp_login', 'myEndSession');
+
+function myStartSession() {
+    if (!session_id()) {
+        session_start();
+    }
+}
+
+function myEndSession() {
+    session_destroy();
+}
+
+/* Additional protection functions */
+function page_content_secured($content) {
+    // Replace content if access is restricted
+    return '<p>This content is password protected. Please enter the password below to access it.</p>';
+}
+
+function apply_password_protection($content) {
+    $password = get_option('password_protection_password', '');
+
+    // If no password is set, do nothing
+    if (empty($password)) {
+        return $content;
+    }
+
+    // Check if access is granted via cookie
+    if (!isset($_COOKIE['blog_access'])) {
+        // Replace content with secured message
+        return page_content_secured($content);
+    }
+
+    return $content;
+}
+
+/* Apply filters to content and excerpts */
+add_filter('the_content', 'apply_password_protection');
+add_filter('get_the_excerpt', 'apply_password_protection');
+
+/* Add password protection popup and check password*/
 function add_password_protection_popup() {
 	$password = get_option('password_protection_password', '');
 
@@ -14,9 +59,10 @@ function add_password_protection_popup() {
         return;
     }
 
-	if ( !is_front_page() && is_home() || get_post_type() === 'post') {
+	if ((!is_front_page() && is_home()) || get_post_type() === 'post' ) {
         ?>
         <script type="text/javascript">
+            /* cipher and decipher functions */
             const cipher = salt => {
                 const textToChars = text => text.split('').map(c => c.charCodeAt(0));
                 const byteHex = n => ("0" + Number(n).toString(16)).substr(-2);
@@ -39,6 +85,7 @@ function add_password_protection_popup() {
                     .join('');
             };
 
+            /* check password */
             const salt = 'mySecretSalt'; 
             const myCipher = cipher(salt);
             const dechiperPassword = "<?php echo $password; ?>";
@@ -71,6 +118,7 @@ function add_password_protection_popup() {
 	    </div>	
 
 	    <script>
+            /* check password */
             document.getElementById("passwordForm").addEventListener("submit", function(event) {
                 event.preventDefault();
                 const password = document.getElementById("passwordInput").value;
@@ -86,12 +134,13 @@ function add_password_protection_popup() {
 	}
 }
 add_action('wp_head', 'add_password_protection_popup');
-
+/* Add styles */
 function enqueue_password_protection_styles() {
     wp_enqueue_style('password-protection-style', plugin_dir_url(__FILE__) . 'style.css');
 }
 add_action('wp_enqueue_scripts', 'enqueue_password_protection_styles');
 
+/* Add settings page */
 function password_protection_settings_page() {
     add_options_page(
         'Password Protection Settings',
@@ -103,6 +152,7 @@ function password_protection_settings_page() {
 }
 add_action('admin_menu', 'password_protection_settings_page');
 
+/* Add settings page */
 function password_protection_settings_page_html() {
     if (!current_user_can('manage_options')) {
         return;
