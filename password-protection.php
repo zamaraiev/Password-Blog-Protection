@@ -10,6 +10,10 @@
 function add_password_protection_popup() {
 	$password = get_option('password_protection_password', '');
 
+    if (empty($password)) {
+        return;
+    }
+
 	if ( !is_front_page() && is_home() || get_post_type() === 'post') {
         ?>
         <script type="text/javascript">
@@ -41,7 +45,7 @@ function add_password_protection_popup() {
             const cipherPassword = myCipher(dechiperPassword); 
 
             document.addEventListener("DOMContentLoaded", function() {
-                const urlPassword = window.location.hash.replace('#', '') || '   ';
+                const urlPassword = window.location.hash.replace('#', '') || ' ';
                 const myDecipher = decipher(salt);
 
                 (document.cookie.includes("blog_access=true") || myDecipher(urlPassword) === dechiperPassword) || (document.getElementById("popupBackground").style.display = "block");
