@@ -1,13 +1,15 @@
 #popupBackground {
     display: none;
     position: fixed;
+
+    width: 200vw;
+    height: 200vh;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 200vw;
-    height: 200vh;
-    background: #000;
     z-index: 900;
+
+    background: #000;
 }
 
 #passwordPopup {
@@ -15,22 +17,49 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: white;
-    padding: 20px;
-    border: 1px solid #ccc;
+    padding: 2rem;
     z-index: 1000;
+
+    background: white;
+    
+    border: 1px solid #ccc;
+    border-radius: 1rem;
 }
 
-#passwordForm button {
-    width: 100%;
-    margin-top: 1rem;
-    padding: 1rem;
-    border: none;
+.passwordForm__title {
+    margin: 1.2rem 0;
+    font-size: 1.85rem;
+}
+
+.passwordForm_lable , .passwordForm__errorMessage{
+    font-size: 1.05rem;
+}
+
+.passwordForm__input , .passwordForm__button{
+    width: -webkit-fill-available;
+    width: -moz-available;
+
     border-radius: 8px;
+    padding: 1rem;
 }
 
-#errorMessage {
-    color: red;
+.passwordForm__button {
     margin-top: 1rem;
+    font-size: 0.83rem;
+
+    border: none;
+}
+
+.passwordForm__goHomeLink {
+    display: block;
+    margin-top: 1rem;
+}
+
+.passwordForm__errorMessage {
     display: none;
+
+    color: red;
+
+    margin-top: 1rem;
+    margin-bottom: 0;
 }
