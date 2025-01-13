@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Password blog protection
  * Description: Add password protection for blog page or post
- * Version: 1.11
+ * Version: 1.2
  * Author: Zamaraiev Dmytro
  * WC requires at least: 5.7
  * Requires at least: 5.5
@@ -43,11 +43,12 @@ function cipher($text, $salt){
 /* Set access cookie */
 function set_access_cookie(){
     $token = bin2hex(random_bytes(16)); // Generate random token
+    $сookieSessionLifetime = get_option('password_protection_cookie_session_lifetime', '24'); // Get cookie session lifetime
     update_option('access_token', $token); // Save token to DB
 
     // setting cookie
     setcookie('blog_access', $token, [
-        'expires' => time() + 7 * 24 * 60 * 60,
+        'expires' => time() + $сookieSessionLifetime * 60 * 60,
         'path' => '/', 
         'secure' => is_ssl(), 
         'httponly' => true, 
@@ -108,19 +109,28 @@ add_action('wp_ajax_nopriv_check_cookie', 'ajax_validate_access_cookie');
 /* Additional protection functions to hide content*/
 function page_content_secured($content){
     // Replace content if access is restricted
-    return '<p>This content is password protected. Please enter the password below to access it.</p>';
+    $restrictedContentMessage = get_option('password_protection_resctircted_content_message', 'This content is password protected. Please enter the password below to access it.');
+    return '<p>' . $restrictedContentMessage . '</p>';
 }
 
 function page_content_secured_for_feeds($content){
     // Replace content if access is restricted
-    return '<p>This content is password protected. Please enter the blog page to access it.</p>';
+    $restrictedContentMessageFeeds = get_option('password_protection_resctircted_content_message_feeds', 'This content is password protected. Please enter the password below to access it.');
+    return '<p>' . $restrictedContentMessageFeeds . '</p>';
 }
 
 function apply_password_protection($content){
     $password = get_option('password_protection_password', '');
     $isDisabledForLoggedInUsers = get_option('password_protection_disabled_for_logged_in_users', '0');
+    $protectionForCertainCategories = get_option('password_protection_for_certain_categories', []);
+    $blogPageProtection = get_option('password_protection_for_blog_page', '0');
+    $enableProtection = get_option('password_protection_enabled', '1'); // '1' for default
 
-    if((!is_front_page() && is_home()) || get_post_type() === 'post' ){ // Check if it is blog or post page
+    if($enableProtection === '0' || ($blogPageProtection === '0' && (!is_front_page() && is_home()))){
+        return $content; // Do nothing if protection isnt enabled
+    }
+
+    elseif(in_category($protectionForCertainCategories)){ // Check if it is blog or post page
         // If no password is set, do nothing
         if (empty($password) || ($isDisabledForLoggedInUsers === '1' && is_user_logged_in())) {
             return $content;
@@ -145,13 +155,13 @@ function add_password_protection_popup(){
 	$password = get_option('password_protection_password', '');
     $isShareAccessTurnedOn = get_option('password_protection_share_access', '1');
     $isDisabledForLoggedInUsers = get_option('password_protection_disabled_for_logged_in_users', '0');
+    $protectionForCertainCategories = get_option('password_protection_for_certain_categories', []);
+    $blogPageProtection = get_option('password_protection_for_blog_page', '0');
+	$returnBackLinkUrl = get_option('password_protection_return_back_link_url', esc_url(home_url()));
+	$returnBackLinkText = get_option('password_protection_return_back_link_text', 'Return to the main page');
 
-    if(empty($password) || ($isDisabledForLoggedInUsers === '1' && is_user_logged_in()) || $enableProtection === '0'){
-        return; // Do nothing if protection isnt enabled or password is not set or disabled for logged in users(if it is enabled)
-    }
-
-	elseif(((!is_front_page() && is_home()) && ) || get_post_type() === 'post' ){ // Check if it is blog or post page
-        ?>
+    ?>
+        <!-- Check password in url -->
         <script type="text/javascript">
             // decipher function
             const decipher = salt => {
@@ -190,7 +200,7 @@ function add_password_protection_popup(){
                 <?php if($isShareAccessTurnedOn === '1') {
                     ?>
                     // Validate password from URL
-                    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+                     fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
                         method: 'POST', 
                         headers: {'Content-Type': 'application/x-www-form-urlencoded' }, 
                         body: `action=check_password&password=${encodeURIComponent(urlPassword)}`, 
@@ -209,6 +219,15 @@ function add_password_protection_popup(){
                 ?>
             });
         </script>
+    <?php
+
+    // Check if password is set and protection is enabled
+    if(empty($password) || ($isDisabledForLoggedInUsers === '1' && is_user_logged_in()) || $enableProtection === '0' || ($blogPageProtection === '0' && (!is_front_page() && is_home())) ){
+        return; // Do nothing if protection isnt enabled or password is not set or disabled for logged in users(if it is enabled)
+    }
+
+	elseif(in_category($protectionForCertainCategories)){ // Check if it is blog or post page
+        ?>
         <!-- Popup -->
 	    <div id="popupBackground">
 		    <div id="passwordPopup">
@@ -218,7 +237,7 @@ function add_password_protection_popup(){
                     <input type="password" id="passwordInput" class="passwordForm__input" required>
                     <div class="passwordForm__form-group">
                         <button type="submit" class="passwordForm__button">Submit</button>
-                        <a class="passwordForm__goHomeLink" href="<?php echo esc_url(home_url()); ?>">Return to the main page</a>
+                        <a class="passwordForm__goHomeLink" href="<?php echo esc_url($returnBackLinkUrl); ?>"><?php echo $returnBackLinkText ?></a>
                     </div>
                     <p id="errorMessage" class="passwordForm__errorMessage">Incorrect password. Try again.</p>
                 </form>
@@ -277,9 +296,9 @@ function password_protection_settings_page() {
 add_action('admin_menu', 'password_protection_settings_page');
 
 /* Add settings page */
-function password_protection_settings_page_html() {
+function password_protection_settings_page_html(){
 
-    if (!current_user_can('manage_options')) {
+    if (!current_user_can('manage_options')){
         return;
     }
 
@@ -296,6 +315,10 @@ function password_protection_settings_page_html() {
                 update_option('password_protection_password', $password);
                 echo '<div class="updated"><p>Password updated successfully.</p></div>';
 
+                //set cookie session lifetime
+                $сookieSessionLifetime = intval($_POST['password_protection_cookie_session_lifetime']);
+                update_option('password_protection_cookie_session_lifetime', $сookieSessionLifetime);
+
                 //allow share access
                 $shareAccess = isset($_POST['password_protection_share_access']) ? '1' : '0';
                 update_option('password_protection_share_access', $shareAccess);
@@ -303,6 +326,27 @@ function password_protection_settings_page_html() {
                 //disable password protection for logged in users
                 $disableForLoggedInUsers = isset($_POST['password_protection_disabled_for_logged_in_users']) ? '1' : '0';
                 update_option('password_protection_disabled_for_logged_in_users', $disableForLoggedInUsers);
+
+                // Update categories
+                $enableProtectionForCertainCategoriesArray = isset($_POST['password_protection_for_certain_categories']) ? array_map('sanitize_text_field', $_POST['password_protection_for_certain_categories']) : [];
+                update_option('password_protection_for_certain_categories', $enableProtectionForCertainCategoriesArray);
+
+                // Enable protection for blog page
+                $blogPageProtection = isset($_POST['password_protection_for_blog_page']) ? '1' : '0';
+                update_option('password_protection_for_blog_page', $blogPageProtection);
+
+                // Update restricted content message
+                $restrictedContentMessage = sanitize_text_field($_POST['password_protection_resctircted_content_message']);
+                update_option('password_protection_resctircted_content_message', $restrictedContentMessage);
+
+                $restrictedContentMessageFeeds = sanitize_text_field($_POST['password_protection_resctircted_content_message_feeds']);
+                update_option('password_protection_resctircted_content_message_feeds', $restrictedContentMessageFeeds);
+				
+				$returnBackLinkUrl = sanitize_text_field($_POST['password_protection_return_back_link_url']);
+				update_option('password_protection_return_back_link_url', $returnBackLinkUrl);
+				
+				$returnBackLinkText = sanitize_text_field($_POST['password_protection_return_back_link_text']);
+				update_option('password_protection_return_back_link_text', $returnBackLinkText);
             } 
             else {
                 echo '<div class="error"><p>Please enter a valid password.</p></div>';
@@ -313,12 +357,30 @@ function password_protection_settings_page_html() {
     // display the settings form
     $enableProtection = get_option('password_protection_enabled', '1'); // '1' for default
     $password = get_option('password_protection_password', '');
+    $сookieSessionLifetime = get_option('password_protection_cookie_session_lifetime', '24'); // '24' for default
     $isShareAccessTurnedOn = get_option('password_protection_share_access', '1'); // '1' for default
-    $isDisabledForLoggedInUsers = get_option('password_protection_disabled_for_logged_in_users', '1'); // '1' for default
+    $isDisabledForLoggedInUsers = get_option('password_protection_disabled_for_logged_in_users', '0'); // '0' for default
+    $enableProtectionForCertainCategories = get_option('password_protection_for_certain_categories', []);
+    $enableProtectionForBlogPage = get_option('password_protection_for_blog_page', '0'); // '0' for default
+	$returnBackLinkUrl = get_option('password_protection_return_back_link_url', esc_url(home_url()));
+	$returnBackLinkText = get_option('password_protection_return_back_link_text', 'Return to the main page');
+    $popupErrorMessage = get_option('password_protection_popup_error_message', 'Incorrect password. Try again.');
+    $restrictedContentMessage = get_option('password_protection_resctircted_content_message', 'This content is password protected. Please enter the password below to access it.');
+    $restrictedContentMessageFeeds = get_option('password_protection_resctircted_content_message_feeds', 'This content is password protected. Please enter the password below to access it.');  
+    
+    // Get list of categories
+    $listOfCategories = get_categories(array('hide_empty' => 0));
     ?>
     <div class="wrap">
         <h1>Password Protection Settings</h1>
         <form method="post" action="">
+            <p> 
+                This plugin provides robust content protection features for your WordPress site. 
+                It allows you to secure posts or pages with a password and customize the message 
+                displayed to users attempting to access protected content. Additionally, the plugin
+                offers a user-friendly popup for enhanced interaction, including a customizable
+                "Return Back" link to improve user navigation.
+            </p>
             <table class="form-table">
                 <tr valign="top">
                     <th scope="row">Enable protection</th>
@@ -333,23 +395,68 @@ function password_protection_settings_page_html() {
                     </td>
                 </tr>
                 <tr valign="top">
+                    <th scope="row">Cookie session lifetime</th>
+                    <td>
+                        <input type="number" name="password_protection_cookie_session_lifetime" value="<?php echo esc_attr( $сookieSessionLifetime); ?>" />
+                        <p>Enter the lifetime of the cookie in hours. By default set to one day. Examples: 48 hours/2 days, 72 hours/3 days, 168 hours/7 days</p>
+                    </td>
+                </tr>
+                <tr valign="top">
+                    <th scope="row">Enable protection for certain categories</th>
+                    <td>
+                        <input type="checkbox" name="password_protection_for_blog_page" value="1" <?php checked('1', $enableProtectionForBlogPage); ?> />
+                        Enable for blog page<br>
+                        <?php if (!empty($listOfCategories)){
+                            foreach ($listOfCategories as $category) { ?>
+                                <input type="checkbox" 
+                                       name="password_protection_for_certain_categories[]" 
+                                       value="<?php echo esc_attr($category->cat_ID); ?>" 
+                                       <?php checked(in_array($category->cat_ID, $enableProtectionForCertainCategories)); ?> />
+                                <?php echo esc_html($category->name); ?><br>
+                            <?php }
+                        } 
+                        else{
+                            echo '<p>No categories available.</p>';
+                        } ?>
+                    </td>
+                </tr>
+                <tr valign="top">
                     <th scope="row">Share access to the blog without password using secure link</th>
                     <td>
                         <input type="checkbox" name="password_protection_share_access" value="1" <?php checked('1', $isShareAccessTurnedOn); ?> />
-                    </td>
-                    <?php
-                        // Display link for sharing access
+                        <?php
+                         // Display link for sharing access
                         if ($isShareAccessTurnedOn === '1' && !empty($password)) {
                             $cipheredPassword = cipher($password, 'mySecretSalt');
-                            echo '<div><p>You can use this URL to share access to the blog without password: ' 
-                                . esc_url(get_permalink(get_option('page_for_posts'))) . '#' . $cipheredPassword . '</p></div>';
+                            echo '<b>You can use this URL to share access to the blog without password: ' 
+                                . esc_url(get_permalink(get_option('page_for_posts'))) . '#' . $cipheredPassword . '</b>';
                         }
                     ?>
+                    </td>
                 </tr>
                 <tr valign="top">
                     <th scope="row">Disable password protection for logged in users</th>
                     <td>
                         <input type="checkbox" name="password_protection_disabled_for_logged_in_users" value="1" <?php checked('1', $isDisabledForLoggedInUsers); ?> />
+                    </td>
+                </tr>
+				<tr valign="top">
+                    <th scope="row">Popup 'Return Back' Link Settings</th>
+                    <td>
+                        <input type="text" name="password_protection_return_back_link_url" value="<?php echo esc_attr($returnBackLinkUrl); ?>"/>
+						<p>'Return Back' link url</p>
+                        <input type="text" name="password_protection_return_back_link_text" value="<?php echo esc_attr($returnBackLinkText); ?>"/>
+                        <p>'Return Back' link text</p>
+                    </td>
+                </tr>
+                <tr valign="top">
+                    <th scope="row">Message shown to users when accessing password-protected content.</th>
+                    <td>
+                        <textarea name="password_protection_resctircted_content_message" rows="4" cols="50"><?php echo esc_attr($restrictedContentMessage); ?></textarea>
+                        <p>Message shown to users when accessing password-protected content.<p>
+                        <textarea name="password_protection_resctircted_content_message_feeds" rows="4" cols="50"><?php echo esc_attr($restrictedContentMessageFeeds); ?></textarea>
+                        <p>Message shown to users when accessing password-protected content in feeds.<p>
+                        <p>By default "This content is password protected. Please enter the password below to access it."<br>
                     </td>
                 </tr>
             </table>
