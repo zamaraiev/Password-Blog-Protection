@@ -4,8 +4,8 @@
  * Description: Add password protection for blog page or post.
  * Version: 1.3
  * Author: zamaraievdrdmytro
- * WC requires at least: 5.7
- * Requires at least: 5.5
+ * Requires PHP: 7.2
+ * Requires at least: 6.6
  * License: GPL-3.0
  */
 
