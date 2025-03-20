@@ -1,0 +1,95 @@
+/* Popup */
+
+#popupBackground {
+    display: none;
+    position: fixed;
+
+    width: 200vw;
+    height: 200vh;
+    z-index: 900;
+
+    background: rgba(0, 0, 0, 0.4);
+}
+
+#passwordPopup {
+    width: fit-content;
+    height: auto;
+    padding: 2rem;
+    z-index: 1000;
+
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 1rem;
+}
+
+#passwordPopup, #popupBackground {
+    position: fixed;
+
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.passwordForm {
+    &__title {
+        margin: 1.2rem 0;
+        font-size: 1.85rem;
+    }
+
+    &__button {
+        margin-top: 1rem;
+        font-size: 0.83rem;
+    
+        border: none;
+    }
+    
+    &__goHomeLink {
+        display: block;
+        margin-top: 1rem;
+        width: fit-content;
+    }
+    
+    &__errorMessage {
+        display: none;
+    
+        color: red;
+    
+        margin-top: 1rem;
+        margin-bottom: 0;
+    }
+
+    &__lable , &__errorMessage{
+        font-size: 1.05rem;
+    }
+
+    &__input , &__button{
+        width: -webkit-fill-available;
+        width: -moz-available;
+    
+        border-radius: 8px;
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 1000px) {
+    #passwordPopup {
+        max-width: 20rem;
+    }
+}
+
+/* Password Settings */
+
+#change_password_input_btn {
+    display: block;
+    width: 120px;
+    height: 20px;
+
+    padding: 5px;
+    align-content: center;
+
+    color: #000;
+    background-color: #eaeaea;
+    border-radius: 10px;
+    border: solid black 1px;
+}
+

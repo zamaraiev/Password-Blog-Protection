@@ -8,75 +8,108 @@
  * @package Blog_Password_Protection
  */
 
-if (!defined('ABSPATH')) {
+if ( !defined( 'ABSPATH' ) ) {
     exit;
 }
 
-function bpp_update_cookie_token() {
-    $password = get_option('password_protection_password', '');
-	$unique_site_token = get_option('password_protection_unique_site_token', ''); 
-	
-    if (empty($unique_site_token)) {
-        $unique_site_token = bin2hex(random_bytes(16)); // Generate unique token
-        update_option('password_protection_unique_site_token', $unique_site_token); // Update token in DB
-    }
-    $new_cookie_token = $password . $unique_site_token; // Create token
-    if ($new_cookie_token !== get_option('password_protection_access_token')) { // Update token if it is changed
-        update_option('password_protection_access_token', $new_cookie_token);
-    }
-}
-add_action('init', 'bpp_update_cookie_token');
-
 /* Set access cookie */
 function bpp_set_access_cookie() {
-	$token = get_option('password_protection_access_token');
-    $cookie_session_lifetime = get_option('password_protection_cookie_session_lifetime', '24');
+    $settings = get_option( 'bp_settings', [] );
 
-    setcookie('blog_access', $token, [
-        'expires' => time() + $cookie_session_lifetime * 60 * 60,
+    setcookie( 'blog_access', $settings['encrypted_password'], [
+        'expires' => time() + $settings['cookie_lifetime'] * 60 * 60,
         'path' => '/', 
         'secure' => is_ssl(), 
         'httponly' => true, 
         'samesite' => 'Strict',
-    ]);  // setting cookie
+    ] );  // setting cookie
 }
 
 /* Add AJAX action to validate password */
 function bpp_ajax_validate_password() {
-    $password = get_option('password_protection_password', '');
+    $settings = get_option( 'bp_settings', [] );
     $entered_password = $_POST['password']; // Get password from AJAX request
 
-    if (wp_check_password($entered_password, $password)) { 
+    if ( wp_check_password( $entered_password, $settings['encrypted_password'] ) ) { 
         bpp_set_access_cookie();
-        wp_send_json_success('Access granted.');
+        wp_send_json_success( 'Access granted.' );
     } 
-    else wp_send_json_error('Incorrect password.');
+    else {
+        wp_send_json_error( 'Incorrect password.' );
+    }
     wp_die();
 }
-add_action('wp_ajax_check_password', 'bpp_ajax_validate_password');
-add_action('wp_ajax_nopriv_check_password', 'bpp_ajax_validate_password');
+add_action( 'wp_ajax_check_password', 'bpp_ajax_validate_password' );
+add_action( 'wp_ajax_nopriv_check_password', 'bpp_ajax_validate_password' );
 
 /* Add function to validate access cookie */
 function bpp_validate_access_cookie() {
-    $cookie_value = isset($_COOKIE['blog_access']) ? $_COOKIE['blog_access'] : '';
-    $stored_token = get_option('password_protection_access_token');
+    $settings = get_option( 'bp_settings', [] );
+    $cookie_value = isset( $_COOKIE['blog_access'] ) ? $_COOKIE['blog_access'] : '';
 	
-    if ($stored_token === $cookie_value) return true;
+    if ( $settings['encrypted_password'] === $cookie_value ) {  // An encrypted password is a unique website token
+        return true;
+    }
     return false; // Cookie is not valid
 }
 
 /* Add AJAX action to validate access cookie */
 function bpp_ajax_validate_access_cookie() {
-    $cookie_value = isset($_COOKIE['blog_access']) ? $_COOKIE['blog_access'] : '';
-    $stored_token = get_option('password_protection_access_token');
+    $settings = get_option( 'bp_settings', [] );
+    $cookie_value = isset( $_COOKIE['blog_access'] ) ? $_COOKIE['blog_access'] : '';
 
-    if ($stored_token === $cookie_value) {
-        wp_send_json_success('Access granted.'); // Cookie is valid
+    if ( $settings['encrypted_password'] === $cookie_value ) {  // An encrypted password is a unique website token
+        wp_send_json_success( 'Access granted.' ); // Cookie is valid
     }
     else {
-        wp_send_json_error('Access denied.'); // Cookie is not valid
+        wp_send_json_error( 'Access denied.' ); // Cookie is not valid
     }
     wp_die();
 }
-add_action('wp_ajax_check_cookie', 'bpp_ajax_validate_access_cookie');
-add_action('wp_ajax_nopriv_check_cookie', 'bpp_ajax_validate_access_cookie');
+add_action( 'wp_ajax_check_cookie', 'bpp_ajax_validate_access_cookie' );
+add_action( 'wp_ajax_nopriv_check_cookie', 'bpp_ajax_validate_access_cookie' );
+
+function bpp_share_access_and_url_password() {
+    $settings = get_option( 'bp_settings', [] );
+
+    ?>
+    <script type="text/javascript">  // Check password in url
+        document.addEventListener( "DOMContentLoaded", function() {  // Check password from URL and cookie
+            const urlPassword = window.location.hash.replace('#', '') || ' ';
+            const bppPasswordPopup = document.getElementById('popupBackground');
+
+            function sendAjaxRequest( action, bodyData ) {
+                return fetch( '<?php echo admin_url("admin-ajax.php"); ?>', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `action=${action}&${bodyData}`
+                } )
+                .then( response => response.json() );
+            }
+
+            sendAjaxRequest( 'check_cookie', '' )
+            .then( data => {
+                if ( !data.success ) {
+                    bppPasswordPopup.style.display = 'block';// Show popup
+                }
+            } )
+            .catch( error => console.error('Error: Cookie validation.', error) ); 
+
+            <?php 
+            if ( $settings['share_access'] === '1' ) { 
+                ?>
+                sendAjaxRequest( 'check_password', `password=${encodeURIComponent(urlPassword)}` ) 
+                .then( data => {
+                    if ( data.success && bppPasswordPopup.style.display === 'block') { 
+                        location.reload();
+                    } 
+                })
+                .catch(error => console.error('Error: Share access link validation error.', error)); 
+                <?php  
+            } 
+            ?>
+        });
+    </script>
+    <?php
+}
+add_action( 'wp_head', 'bpp_share_access_and_url_password' );
