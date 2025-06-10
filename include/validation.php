@@ -12,10 +12,18 @@ if ( !defined( 'ABSPATH' ) ) {
     exit;
 }
 
-/* Set access cookie */
-function bpp_set_access_cookie() {
-    $settings = get_option( 'bp_settings', [] );
+function bpp_get_plagin_setting() {
+    $settings = wp_cache_get( 'bp_settings', 'options' );
 
+    if ( $settings === false ) {
+        return get_option( 'bp_settings', [] );
+    }
+
+    return $settings;
+}
+
+/* Set access cookie */
+function bpp_set_access_cookie( $settings ) {
     setcookie( 'blog_access', $settings['encrypted_password'], [
         'expires' => time() + $settings['cookie_lifetime'] * 60 * 60,
         'path' => '/', 
@@ -27,11 +35,12 @@ function bpp_set_access_cookie() {
 
 /* Add AJAX action to validate password */
 function bpp_ajax_validate_password() {
-    $settings = get_option( 'bp_settings', [] );
+    $settings = bpp_get_plagin_setting();
+
     $entered_password = $_POST['password']; // Get password from AJAX request
 
     if ( wp_check_password( $entered_password, $settings['encrypted_password'] ) ) { 
-        bpp_set_access_cookie();
+        bpp_set_access_cookie( $settings );
         wp_send_json_success( 'Access granted.' );
     } 
     else {
@@ -43,8 +52,7 @@ add_action( 'wp_ajax_check_password', 'bpp_ajax_validate_password' );
 add_action( 'wp_ajax_nopriv_check_password', 'bpp_ajax_validate_password' );
 
 /* Add function to validate access cookie */
-function bpp_validate_access_cookie() {
-    $settings = get_option( 'bp_settings', [] );
+function bpp_validate_access_cookie( $settings ) {
     $cookie_value = isset( $_COOKIE['blog_access'] ) ? $_COOKIE['blog_access'] : '';
 	
     if ( $settings['encrypted_password'] === $cookie_value ) {  // An encrypted password is a unique website token
@@ -55,7 +63,7 @@ function bpp_validate_access_cookie() {
 
 /* Add AJAX action to validate access cookie */
 function bpp_ajax_validate_access_cookie() {
-    $settings = get_option( 'bp_settings', [] );
+    $settings = bpp_get_plagin_setting();
     $cookie_value = isset( $_COOKIE['blog_access'] ) ? $_COOKIE['blog_access'] : '';
 
     if ( $settings['encrypted_password'] === $cookie_value ) {  // An encrypted password is a unique website token
@@ -70,7 +78,7 @@ add_action( 'wp_ajax_check_cookie', 'bpp_ajax_validate_access_cookie' );
 add_action( 'wp_ajax_nopriv_check_cookie', 'bpp_ajax_validate_access_cookie' );
 
 function bpp_share_access_and_url_password() {
-    $settings = get_option( 'bp_settings', [] );
+    $settings = bpp_get_plagin_setting();
 
     ?>
     <script type="text/javascript">  // Check password in url

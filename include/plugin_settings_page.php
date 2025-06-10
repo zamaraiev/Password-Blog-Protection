@@ -14,16 +14,16 @@ if ( !defined( 'ABSPATH' ) ) {
 class BPP_Settings {
     private static $instance = null;
 
+    private function __construct() {
+        add_action( 'admin_menu', [$this, 'add_settings_page'] );
+        add_action( 'admin_init', [$this, 'register_settings'] );
+    }
+
     public static function get_instance() {
         if (self::$instance === null) {
             self::$instance = new self();
         }
         return self::$instance;
-    }
-
-    private function __construct() {
-        add_action( 'admin_menu', [$this, 'add_settings_page'] );
-        add_action( 'admin_init', [$this, 'register_settings'] );
     }
 
     public function add_settings_page() {
@@ -44,11 +44,16 @@ class BPP_Settings {
     }
 
     public function sanitize_settings( $input ) {
+        $settings = $this->get_settings();
         $sanitized = [];
 
         if ( isset( $input['password'] ) ) {
 			$sanitized['encrypted_password'] = wp_hash_password( $input['password'] );                  
 		}
+		else {
+			$sanitized['encrypted_password'] = $settings['encrypted_password'];
+		}
+        
         $sanitized['enable_protection'] = isset( $input['protection_enabled'] ) ? '1' : '0';
         $sanitized['cookie_lifetime'] = isset( $input['cookie_session_lifetime'] ) 
                                     ? absint( $input['cookie_session_lifetime'] ) 
@@ -61,6 +66,7 @@ class BPP_Settings {
                                                                 ? array_map( 'sanitize_text_field' , $input['disable_for_certain_user_roles'] ) 
                                                                 : [];
         $sanitized['blog_page_protection'] = isset( $input['blog_page_protection'] ) ? '1' : '0';
+        $sanitized['home_page_protection'] = isset( $input['home_page_protection'] ) ? '1' : '0';
         $sanitized['restricted_message'] = isset( $input['restricted_message'] ) 
                                         ? sanitize_text_field( $input['restricted_message'] ) 
                                         : 'This content is password protected. Please enter the password below to access it.';
@@ -89,6 +95,7 @@ class BPP_Settings {
             'protection_for_certain_categories' => [],
             'disable_protection_for_certain_user_roles' => [],
             'blog_page_protection' => '1',
+            'home_page_protection' => '0',
             'restricted_message' => 'This content is password protected. Please enter the password below to access it.',
             'restricted_message_feeds' => 'This content is password protected. Please enter the password below to access it.',
             'return_back_link_url' => home_url(),
@@ -157,8 +164,10 @@ class BPP_Settings {
                     <tr valign="top">
                         <th scope="row">Enable protection for certain categories</th>
                         <td>
+                            <input type="checkbox" name="bp_settings[home_page_protection]" value="1" <?php checked( '1', $settings['home_page_protection'] ); ?> />
+                            <p>Enable for home page</p><br>
                             <input type="checkbox" name="bp_settings[blog_page_protection]" value="1" <?php checked( '1', $settings['blog_page_protection'] ); ?> />
-                            <p>Enable for blog page</p><br>
+                            <p>Enable for blog page. Disable if bloge page is the home page.</p><br>
                             <?php 
                                 if ( !empty( $list_of_categories ) ) {
                                     foreach ( $list_of_categories as $category ) { 

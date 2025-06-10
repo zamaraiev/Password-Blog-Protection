@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Blog Password Protection - BPP
  * Description: Add password protection for blog page or post.
- * Version: 1.3
+ * Version: 1.4
  * Author: zamaraievdrdmytro
  * Requires PHP: 7.2
  * Requires at least: 6.6

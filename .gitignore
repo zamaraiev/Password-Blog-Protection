@@ -5,3 +5,6 @@
 !.vscode/extensions.json
 !.vscode/*.code-snippets
 !.vscode/password-blog-protection.code-workspace
+prepros.config
+.gitignore
+.DS_Store
