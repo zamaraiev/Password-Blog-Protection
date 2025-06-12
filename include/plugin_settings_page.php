@@ -7,11 +7,13 @@
  * @package Blog_Password_Protection
  */
 
+namespace Blog_Password_Protection;
+
 if ( !defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class BPP_Settings {
+class Settings {
     private static $instance = null;
 
     private function __construct() {
@@ -255,4 +257,4 @@ class BPP_Settings {
     }
 }
 
-BPP_Settings::get_instance();
+Settings::get_instance();
