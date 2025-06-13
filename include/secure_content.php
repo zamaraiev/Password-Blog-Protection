@@ -123,7 +123,7 @@ class SecureContent {
             event.preventDefault();
             const passwordInput = document.getElementById( "passwordInput" ).value;
 
-            fetch( '<?php echo admin_url( "admin-ajax.php" ); ?>', {  // Validate password
+            fetch( '<?php echo esc_url( admin_url("admin-ajax.php") ); ?>', {  // Validate password
                 method: "POST",
                 headers: { "Content-Type": "application/x-www-form-urlencoded" }, 
                 body: `action=bpp_check_password&password=${encodeURIComponent( passwordInput )}&_ajax_nonce=<?php echo esc_js($this->nonce); ?>`, 
@@ -151,7 +151,7 @@ class SecureContent {
             const bppPasswordPopup = document.getElementById('popupBackground');
 
             function sendAjaxRequest( action, bodyData ) {
-                return fetch( '<?php echo admin_url("admin-ajax.php"); ?>', {
+                return fetch( '<?php echo esc_url( admin_url("admin-ajax.php") ); ?>', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: `action=${action}&${bodyData}&_ajax_nonce=<?php echo esc_js($this->nonce); ?>`

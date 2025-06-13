@@ -39,7 +39,7 @@ class Validation {
     public function ajax_validate_password() {
         check_ajax_referer('bpp_ajax_nonce');
 
-        $entered_password = $_POST['password']; // Get password from AJAX request
+        $entered_password = isset($_POST['password']) ? wp_unslash($_POST['password']) : ''; // Get password from AJAX request
 
         if ( wp_check_password( $entered_password, $this->settings['encrypted_password'] ) ) { 
             $this->set_access_cookie();
@@ -53,7 +53,7 @@ class Validation {
 
     /* Add function to validate access cookie */
     public function validate_access_cookie() {
-        $cookie_value = isset( $_COOKIE['blog_access'] ) ? $_COOKIE['blog_access'] : '';
+        $cookie_value = isset( $_COOKIE['blog_access'] ) ? wp_unslash($_COOKIE['blog_access']) : '';
 
         if ( $this->settings['encrypted_password'] === $cookie_value ) {  // An encrypted password is a unique website token
             return true;
@@ -64,7 +64,7 @@ class Validation {
     /* Add AJAX action to validate access cookie */
     public function ajax_validate_access_cookie() {
         check_ajax_referer('bpp_ajax_nonce');
-        $cookie_value = isset( $_COOKIE['blog_access'] ) ? $_COOKIE['blog_access'] : '';
+        $cookie_value = isset( $_COOKIE['blog_access'] ) ? wp_unslash($_COOKIE['blog_access']) : '';
 
         if ( $this->settings['encrypted_password'] === $cookie_value ) {  // An encrypted password is a unique website token
             wp_send_json_success( 'Access granted.' ); // Cookie is valid

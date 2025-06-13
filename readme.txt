@@ -1,12 +1,14 @@
 === Blog Password Protection - BPP ===
 Contributors: zamaraievdrdmytro
-Tags: password, protection, secure blog, login popup, user role restriction, category restriction, private content
+Tags: password, protection, secure blog, user role restriction, category restriction
 Requires at least: 6.6
+Tested up to: 6.8.1
 Requires PHP: 7.2
+Stable tag: 1.4.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
 
-A simple and secure plugin to protect your entire blog or specific categories with a password popup, category filtering, user role exclusions, and secure sharing links.
+A simple and secure plugin to protect your entire blog or specific categories with a password popup.
 
 == Description ==
 

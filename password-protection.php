@@ -6,6 +6,7 @@
  * Author: zamaraievdrdmytro
  * Requires PHP: 7.2
  * Requires at least: 6.6
+ * Tested up to: 6.8.1
  * License: GPL-3.0
  */
 
@@ -20,7 +21,7 @@ define( 'PASSWORD_PROTECTION_URL', plugin_dir_url(__FILE__) );
 
 /* Add styles */
 function enqueue_password_protection_styles() {
-    wp_enqueue_style( 'bpp_password_protection_style', PASSWORD_PROTECTION_URL . 'assets/style.min.css' );
+    wp_enqueue_style( 'bpp_password_protection_style', PASSWORD_PROTECTION_URL . 'assets/style.min.css', [], '1.4.0' );
 }
 add_action( 'wp_enqueue_scripts', __NAMESPACE__ . '\enqueue_password_protection_styles' );
 
