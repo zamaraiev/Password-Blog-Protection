@@ -2,7 +2,7 @@
 Contributors: zamaraievdrdmytro
 Tags: password, protection, secure blog, user role restriction, category restriction
 Requires at least: 6.6
-Tested up to: 6.8.1
+Tested up to: 6.8
 Requires PHP: 7.2
 Stable tag: 1.4.0
 License: GPLv3 or later
