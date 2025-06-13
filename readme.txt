@@ -1,4 +1,4 @@
-=== Blog Password Protection ===
+=== Blog Password Protection - BPP ===
 Contributors: zamaraievdrdmytro
 Tags: password, protection, secure blog, login popup, user role restriction, category restriction, private content
 Requires at least: 6.6
@@ -10,7 +10,7 @@ A simple and secure plugin to protect your entire blog or specific categories wi
 
 == Description ==
 
-**Blog Password Protection** is a lightweight, easy-to-use plugin that helps you protect your entire WordPress blog or specific parts of it with a password. Whether you’re running a private journal, members-only site, or internal project blog — this plugin allows you to manage visibility and access without any complex setup.
+**Blog Password Protection - BPP** is a lightweight, easy-to-use plugin that helps you protect your entire WordPress blog or specific parts of it with a password. Whether you’re running a private journal, members-only site, or internal project blog — this plugin allows you to manage visibility and access without any complex setup.
 
 It includes a customizable popup login prompt, the ability to restrict content by category, bypass access via secure URLs, and selectively disable protection for logged-in users by role.
 

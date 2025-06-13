@@ -108,10 +108,10 @@ class SecureContent {
                 <form id="passwordForm" class="passwordForm">
                     <?php wp_nonce_field( 'bpp_password_protection_popup', 'bpp_nonce_password_protection_popup' ); ?>
                     <h3 class="passwordForm__title"><?php echo esc_html( $this->settings['popup_title'] ) ?></h3>
-                    <label for="passwordInput" class="passwordForm__lable"><?php esc_html_e('Password:', 'bpp_blog_password_protection'); ?></label>
+                    <label for="passwordInput" class="passwordForm__lable"><?php esc_html_e('Password:', 'blog_password_protection'); ?></label>
                     <input type="password" id="passwordInput" class="passwordForm__input" required>
                     <div class="passwordForm__form-group">
-                        <button type="submit" class="passwordForm__button"><?php esc_html_e('Submit', 'bpp_blog_password_protection'); ?></button>
+                        <button type="submit" class="passwordForm__button"><?php esc_html_e('Submit', 'blog_password_protection'); ?></button>
                         <a class="passwordForm__goHomeLink" href="<?php echo esc_url( $this->settings['return_back_link_url'] ); ?>"><?php echo esc_html( $this->settings['return_back_link_text'] ) ?></a>
                     </div>
                     <p id="errorMessage" class="passwordForm__errorMessage"><?php echo esc_html( $this->settings['error_message'] ) ?></p>
