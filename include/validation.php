@@ -15,10 +15,11 @@ if ( !defined( 'ABSPATH' ) ) {
 }
 
 class Validation {
+    private $settings;
     /* Set access cookie */
-    public function set_access_cookie( $settings ) {
-        setcookie( 'blog_access', $settings['encrypted_password'], [
-            'expires' => time() + $settings['cookie_lifetime'] * 60 * 60,
+    public function set_access_cookie() {
+        setcookie( 'blog_access', $this->settings['encrypted_password'], [
+            'expires' => time() + $this->settings['cookie_lifetime'] * 60 * 60,
             'path' => '/', 
             'secure' => is_ssl(), 
             'httponly' => true, 
@@ -26,32 +27,22 @@ class Validation {
         ] );  // setting cookie
     }
 
-    public function __construct() {
-        add_action( 'wp_ajax_check_password', [ $this, 'ajax_validate_password' ] );
-        add_action( 'wp_ajax_nopriv_check_password', [ $this, 'ajax_validate_password' ] );
-        add_action( 'wp_ajax_check_cookie', [ $this, 'ajax_validate_access_cookie' ] );
-        add_action( 'wp_ajax_nopriv_check_cookie', [ $this, 'ajax_validate_access_cookie' ] );
-        add_action( 'wp_head', [ $this, 'share_access_and_url_password' ] );
-    }
-
-    public function get_plugin_settings() {
-        $settings = wp_cache_get( 'bp_settings', 'options' );
-
-        if ( $settings === false ) {
-            return get_option( 'bp_settings', [] );
-        }
-
-        return $settings;
+    public function __construct($plugin_settings) {
+        add_action( 'wp_ajax_bpp_check_password', [ $this, 'ajax_validate_password' ] );
+        add_action( 'wp_ajax_nopriv_bpp_check_password', [ $this, 'ajax_validate_password' ] );
+        add_action( 'wp_ajax_bpp_check_cookie', [ $this, 'ajax_validate_access_cookie' ] );
+        add_action( 'wp_ajax_nopriv_bpp_check_cookie', [ $this, 'ajax_validate_access_cookie' ] );
+        $this->settings = $plugin_settings;
     }
 
     /* Add AJAX action to validate password */
     public function ajax_validate_password() {
-        $settings = $this->get_plugin_settings();
+        check_ajax_referer('bpp_ajax_nonce');
 
         $entered_password = $_POST['password']; // Get password from AJAX request
 
-        if ( wp_check_password( $entered_password, $settings['encrypted_password'] ) ) { 
-            $this->set_access_cookie( $settings );
+        if ( wp_check_password( $entered_password, $this->settings['encrypted_password'] ) ) { 
+            $this->set_access_cookie();
             wp_send_json_success( 'Access granted.' );
         } 
         else {
@@ -61,10 +52,10 @@ class Validation {
     }
 
     /* Add function to validate access cookie */
-    public function validate_access_cookie( $settings ) {
+    public function validate_access_cookie() {
         $cookie_value = isset( $_COOKIE['blog_access'] ) ? $_COOKIE['blog_access'] : '';
-	
-        if ( $settings['encrypted_password'] === $cookie_value ) {  // An encrypted password is a unique website token
+
+        if ( $this->settings['encrypted_password'] === $cookie_value ) {  // An encrypted password is a unique website token
             return true;
         }
         return false; // Cookie is not valid
@@ -72,59 +63,15 @@ class Validation {
 
     /* Add AJAX action to validate access cookie */
     public function ajax_validate_access_cookie() {
-        $settings = $this->get_plugin_settings();
+        check_ajax_referer('bpp_ajax_nonce');
         $cookie_value = isset( $_COOKIE['blog_access'] ) ? $_COOKIE['blog_access'] : '';
 
-        if ( $settings['encrypted_password'] === $cookie_value ) {  // An encrypted password is a unique website token
+        if ( $this->settings['encrypted_password'] === $cookie_value ) {  // An encrypted password is a unique website token
             wp_send_json_success( 'Access granted.' ); // Cookie is valid
         }
         else {
             wp_send_json_error( 'Access denied.' ); // Cookie is not valid
         }
         wp_die();
-    }
-
-    public function share_access_and_url_password() {
-        $settings = $this->get_plugin_settings();
-
-        ?>
-        <script type="text/javascript">  // Check password in url
-        document.addEventListener( "DOMContentLoaded", function() {  // Check password from URL and cookie
-            const urlPassword = window.location.hash.replace('#', '') || ' ';
-            const bppPasswordPopup = document.getElementById('popupBackground');
-
-            function sendAjaxRequest( action, bodyData ) {
-                return fetch( '<?php echo admin_url("admin-ajax.php"); ?>', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: `action=${action}&${bodyData}`
-                } )
-                .then( response => response.json() );
-            }
-
-            sendAjaxRequest( 'check_cookie', '' )
-            .then( data => {
-                if ( !data.success ) {
-                    bppPasswordPopup.style.display = 'block';// Show popup
-                }
-            } )
-            .catch( error => console.error('Error: Cookie validation.', error) ); 
-
-            <?php 
-            if ( $settings['share_access'] === '1' ) { 
-                ?>
-                sendAjaxRequest( 'check_password', `password=${encodeURIComponent(urlPassword)}` ) 
-                .then( data => {
-                    if ( data.success && bppPasswordPopup.style.display === 'block') { 
-                        location.reload();
-                    } 
-                })
-                .catch(error => console.error('Error: Share access link validation error.', error)); 
-                <?php  
-            } 
-            ?>
-        });
-        </script>
-        <?php
     }
 }
