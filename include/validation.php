@@ -55,7 +55,7 @@ class Validation {
     public function validate_access_cookie() {
         $cookie_value = isset( $_COOKIE['blog_access'] ) ? wp_unslash($_COOKIE['blog_access']) : '';
 
-        if ( $this->settings['encrypted_password'] === $cookie_value ) {  // An encrypted password is a unique website token
+        if ( hash_equals( $this->settings['encrypted_password'], $cookie_value ) ) {  // An encrypted password is a unique website token
             return true;
         }
         return false; // Cookie is not valid
@@ -66,7 +66,7 @@ class Validation {
         check_ajax_referer('bpp_ajax_nonce');
         $cookie_value = isset( $_COOKIE['blog_access'] ) ? wp_unslash($_COOKIE['blog_access']) : '';
 
-        if ( $this->settings['encrypted_password'] === $cookie_value ) {  // An encrypted password is a unique website token
+        if ( hash_equals( $this->settings['encrypted_password'], $cookie_value ) ) {  // An encrypted password is a unique website token
             wp_send_json_success( 'Access granted.' ); // Cookie is valid
         }
         else {

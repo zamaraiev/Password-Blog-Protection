@@ -4,7 +4,7 @@ Tags: password, protection, secure blog, user role restriction, category restric
 Requires at least: 6.6
 Tested up to: 6.8
 Requires PHP: 7.2
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.en.html
 
