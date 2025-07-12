@@ -114,7 +114,7 @@ class Settings_DMYZBP {
     }
 
     public function settings_enqueue_scripts() {
-        wp_register_script( 'dmyzbp-admin-inline', '', [], '1.4.1', true );
+        wp_register_script( 'dmyzbp-admin-inline', '', [], '1.4.2', true );
 
         $inline_script = '
             document.getElementById("change_password_btn")?.addEventListener("click", function() {

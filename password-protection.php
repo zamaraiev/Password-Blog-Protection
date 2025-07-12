@@ -1,8 +1,8 @@
 <?php 
 /*
- * Plugin Name: Blog Password Protection - DMYZBP
+ * Plugin Name: Blog Password Protection - BPP
  * Description: Add password protection for blog page or post.
- * Version: 1.4.1
+ * Version: 1.4.2
  * Author: dmytro1zamaraiev
  * Requires PHP: 7.2
  * Requires at least: 6.6

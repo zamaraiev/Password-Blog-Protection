@@ -96,7 +96,7 @@ class SecureContent_DMYZBP {
 
     public function secure_content_enqueue_scripts() {
         $this->nonce = wp_create_nonce('dmyzbp_ajax_nonce');
-        wp_register_script( 'dmyzbp-secure-content', '', [], '1.4.1', true );
+        wp_register_script( 'dmyzbp-secure-content', '', [], '1.4.2', true );
 
         $inline_script = '
             document.addEventListener( "DOMContentLoaded", function() {  // Check password from URL and cookie
